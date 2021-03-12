@@ -1,10 +1,10 @@
 import json
 
 import requests
-from django.http.response import HttpResponse
+from django.http.response import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.template import loader
-
+from django.core.exceptions import ObjectDoesNotExist, FieldError
 from .forms import *
 from .models import *
 
@@ -27,30 +27,35 @@ def homepage(request):
         form = homePageForm(request.POST)
         
         loc_name = form.cleaned_data["location_namee"]
+        
+        
+        # This retrieves the location information from the Country that has the 
+        # name "${loc_name}". This allows us to retrieved the stored API data
+        # that was previously provided by the user
+        try:
+            location_info = Country.objects.filter(location_name=loc_name)
 
-    # Otherwise, if the request is not post, the user is not 
-    # submitting data, so the default view (Hong Kong) is shown
+        except ObjectDoesNotExist:
+            context = {"error": "404"}
+            HttpResponse(template.render(context, request))
+
+        query = {
+                "resource": location_info.resource_url,
+                "section":  1,
+                "format":   "json",
+            }
+
+        url = location_info.api_endpoint
+
     else:
-        #This is empty for now but imagine it to be similar to the 
-        #above part but with Hong Kong hard-coded in
         loc_name = "Hong Kong"
-
-    # This retrieves the location information from the Country that has the 
-    # name "${loc_name}". This allows us to retrieved the stored API data
-    # that was previously provided by the user
-    location_info = Country.objects.filter(location_name=loc_name)
-    
-
-    # This is the part of the view that retrieves the data from the API (the query script), 
-    # except that now, instead of using hardcoded data, the script uses data stored in the 
-    # database (which is accessed using the Country model) 
-    query = {
-            "resource": location_info.resource_url,
-            "section":  1,
-            "format":   "json",
+        query = {
+                "resource": "",
+                "section":  1,
+                "format":   "json",
         }
+        url = "https://api.data.gov.hk/v2/filter"
 
-    url = location_info.api_endpoint
 
     response = requests.get(url, params={"q": json.dumps(query)} )
 
@@ -61,7 +66,6 @@ def homepage(request):
         context = { "error": response.status_code }
 
         HttpResponse(template.render(context, request))
-
 
     context = response.json()
 
@@ -95,15 +99,20 @@ def newResource(request):
                             api_endpoint=api,
                             resource_url=url)
 
-            # Save the model to the DB
-            model.save()
+            # Save the model to the DB. Return error if unable to do so
+            try:
+                model.save()
+            except FieldError:
+                context = {"error": "503"}
+                return HttpResponse(template.render(context, request))
+            
+            # If all checks pass, redirect to home
+            return HttpResponseRedirect('/')
 
-            #TODO: Add redirect to homepage of ${loc}
-
-
-        # Else process the error in the form
+        # Else return a 400 (invalid request) to user
         else:
-            print("placeholder code")
+            context = {"error": "400"}
+            return HttpResponse(template.render(context, request))
 
     # Otherwise simply return the empty tempalte so users can imput data    
     return HttpResponse(template.render(context, request))
