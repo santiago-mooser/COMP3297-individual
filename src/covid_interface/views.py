@@ -50,7 +50,7 @@ def homepage(request):
     else:
         loc_name = "Hong Kong"
         query = {
-                "resource": "",
+                "resource": "http://www.chp.gov.hk/files/misc/latest_situation_of_reported_cases_covid_19_eng.csv",
                 "section":  1,
                 "format":   "json",
         }
@@ -67,7 +67,8 @@ def homepage(request):
 
         HttpResponse(template.render(context, request))
 
-    context = response.json()
+    response = response.json()
+    context = { "context": response }
 
     # Otherwise, we can return the homepage HTML template with the retrieved data.
     return HttpResponse(template.render(context, request))
