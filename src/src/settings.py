@@ -18,17 +18,17 @@ import django_heroku
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'ym0(3_b4%$3vr^n1(0m$d$3+7%hj=jnbx2dv4(-0#z%x$vxq(2'
+SECRET_KEY = os.environ.get('SECRET_KEY')
+#SECRET_KEY = 'ym0(3_b4%$3vr^n1(0m$d$3+7%hj=jnbx2dv4(-0#z%x$vxq(2'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost"]
+ALLOWED_HOSTS = [".herokuapp.com","localhost"]
 
 
 # Application definition
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
