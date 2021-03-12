@@ -1,4 +1,4 @@
 django
 django-heroku
-gunicord
+gunicorn
 whitenoise
