@@ -1,8 +1,10 @@
 from django import forms
+from .models import *
 
 
 class homePageForm(forms.Form):
-    location = forms.CharField(max_length=100)
+    location_list = forms.ModelChoiceField(queryset=Country.objects.all().order_by('location_name'))
+
 
 class newResourceForm(forms.Form):
     location_name   = forms.CharField(max_length=150)
