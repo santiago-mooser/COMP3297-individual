@@ -26,8 +26,7 @@ def homepage(request):
     if request.method == "POST":
         form = homePageForm(request.POST)
         
-        loc_name = form.cleaned_data["location_namee"]
-        
+        loc_name = form.cleaned_data["location_name"]
         
         # This retrieves the location information from the Country that has the 
         # name "${loc_name}". This allows us to retrieved the stored API data
@@ -38,6 +37,8 @@ def homepage(request):
         except ObjectDoesNotExist:
             context = {"error": "404"}
             HttpResponse(template.render(context, request))
+
+        context.update({"location name": location_info.location_name })
 
         query = {
                 "resource": location_info.resource_url,
@@ -61,14 +62,46 @@ def homepage(request):
 
     # If the status code isn't 200 (meaning success), then there was an error in the 
     # retrieval of information so we must tell the user. 
-    if response.status_code != "200":
+    if response.status_code != 200:
         
-        context = { "error": response.status_code }
+        context.update({ "error": response.status_code })
 
         HttpResponse(template.render(context, request))
 
     response = response.json()
-    context = { "context": response }
+    average_cases = 0
+    average_fatalities = 0
+    cases = 0
+    deaths = 0
+    for i in range(7):
+        cases = int(response[-i-1].get("Number of confirmed cases")) - int(response[-i-2].get("Number of confirmed cases"))
+        deaths = int(response[-i-1].get("Number of death cases")) - int(response[-i-2].get("Number of death cases"))
+        average_cases += cases   
+        average_fatalities += deaths       
+
+
+    context.update({ "derived": {
+                        "cases": cases,
+                        "average_cases": average_cases/7,
+                        "deaths": deaths,
+                        "average_fatalities": average_fatalities/7,
+                        }
+                    })
+
+    context.update({ "raw":{
+                            "date": response[-1].get("As of date"),
+                            "total_cases": response[-1].get("Number of confirmed cases"),
+                            "total_deaths": response[-1].get("Number of death cases"),
+                        }
+                    })
+
+    print(context["derived"])
+
+    form = homePageForm()
+
+    context.update({"form": form})
+    
+    print(context)
 
     # Otherwise, we can return the homepage HTML template with the retrieved data.
     return HttpResponse(template.render(context, request))
@@ -84,7 +117,7 @@ def newResource(request):
 
     #If the request is POST, process the form (since the user is submitting data)
     if request.method == "POST":
-        form = homePageForm(request.POST)
+        form = newResourceForm(request.POST)
 
         if form.is_valid():
 

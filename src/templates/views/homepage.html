@@ -17,14 +17,37 @@
 <br>
 <h1>Test</h1>
 
-{% if context %}
-    {% for day_data in context %}
-        <p>
-            {{ day_data }}
-        </p>    
-    {% endfor %}
+{% csrf_token %}
+<h2>
+    {{ form.location_list }} 
+</h2>
 
+
+
+
+
+{% if error %}
+<br>
+<br>
+<h1>
+    Error {{ error }}
+</h1>
+
+{% else %}
+    <p>
+        {% for key, data in derived.items %}
+            {{ key }} : {{ data }}
+            <br>
+        {% endfor %}
+    </p>
+    <p>
+        {% for key, data in raw.items %}
+            {{ key }} : {{ data }}
+        <br>
+        {% endfor %}
+    </p>
 {% endif %}
+
 
 {% endblock %}
 
