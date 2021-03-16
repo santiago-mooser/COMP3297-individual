@@ -144,7 +144,5 @@ def newResource(request):
     model = Country
     form = newResourceForm()
     context.update({ "form": form }) 
-
-    print("Returning form")
     return HttpResponse(template.render(context, request))
 

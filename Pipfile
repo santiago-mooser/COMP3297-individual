@@ -12,6 +12,7 @@ whitenoise = "*"
 django-crispy-forms = "*"
 Django = "*"
 psycopg2-binary = "*"
+python-dotenv = "*"
 
 [dev-packages]
 
