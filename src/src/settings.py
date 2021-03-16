@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 
 import os
 from pathlib import Path
+import django_heroku
 
 #import django_heroku
 
@@ -28,7 +29,7 @@ SECRET_KEY = 'ym0(3_b4%$3vr^n1(0m$d$3+7%hj=jnbx2dv4(-0#z%x$vxq(2'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [".herokuapp.com","localhost"]
+ALLOWED_HOSTS = ["se-covid.herokuapp.com","localhost"]
 
 
 # Application definition
@@ -130,6 +131,7 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Activate Django-Heroku.
 django_heroku.settings(locals())
