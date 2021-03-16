@@ -1,10 +1,11 @@
 import json
 
 import requests
+from django.core.exceptions import FieldError, ObjectDoesNotExist
 from django.http.response import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import redirect
 from django.template import loader
-from django.core.exceptions import ObjectDoesNotExist, FieldError
+
 from .forms import *
 from .models import *
 

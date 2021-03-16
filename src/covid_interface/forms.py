@@ -1,7 +1,9 @@
-from django import forms
-from .models import *
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
+from django import forms
+
+from .models import *
+
 
 class newResourceForm(forms.Form):
     location_name   = forms.CharField(max_length=150)
