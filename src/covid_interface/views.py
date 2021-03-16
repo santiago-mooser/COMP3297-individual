@@ -13,7 +13,7 @@ from .models import *
 # This is so that if the website is visited without any options, 
 # the Hong Kong view will still be displayed.
 def proxy(request):
-    return homepage(request, "Hong Kong")
+    return redirect('homepage', loc_name='Hong Kong')
 
 
 #This is the main homepage that actually presents all the data
@@ -79,10 +79,12 @@ def homepage(request, loc_name):
                     "location_name": location_info.location_name,
                     "countries": countries,
                     "derived": {
-                        "cases": cases,
+                        "new_cases": cases,
                         "average_cases": average_cases/7,
-                        "deaths": deaths,
+                        "cases_per_mil": response[-1].get("Number of confirmed cases")/location_info.est_population,
+                        "new_deaths": deaths,
                         "average_fatalities": average_fatalities/7,
+                        "deaths_per_mil": response[-1].get("Number of death cases")/location_info.est_population,
                         },
                     "raw":{
                         "date": response[-1].get("As of date"),
