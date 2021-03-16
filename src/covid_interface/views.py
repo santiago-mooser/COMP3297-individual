@@ -8,55 +8,48 @@ from django.core.exceptions import ObjectDoesNotExist, FieldError
 from .forms import *
 from .models import *
 
-# Create your views here.
 
-def homepage(request):
+# This is so that if the website is visited without any options, 
+# the Hong Kong view will still be displayed.
+def proxy(request):
+    return homepage(request, "Hong Kong")
 
-    # Load the HTML template
+
+#This is the main homepage that actually presents all the data
+# It expects the request together with a location name in the 
+# form of a string.
+def homepage(request, loc_name):
+
+    # Load the HTML template and instantiate context
     template = loader.get_template('views/homepage.html')
-    
-    # Context is any dynamic data in the HTML template (such as the name of 
-    # the location and its data)
     context = {}
 
-    # When the request to the "homepage" view is POST, this means that 
-    # the user is trying to submit data, so we have to process the 
-    # data in the request by using a form. In this case it's the 
-    # location name only
-    if request.method == "POST":
-        form = homePageForm(request.POST)
-        
-        loc_name = form.cleaned_data["location_name"]
-        
-        # This retrieves the location information from the Country that has the 
-        # name "${loc_name}". This allows us to retrieved the stored API data
-        # that was previously provided by the user
-        try:
-            location_info = Country.objects.filter(location_name=loc_name)
+    #Get a list of all available countries
+    countries = []
+    for country in Country.objects.values():
+        countries.append(country.get("location_name"))
 
-        except ObjectDoesNotExist:
-            context = {"error": "404"}
-            HttpResponse(template.render(context, request))
+    #retrieve location information if it exists
+    try:
+        location_info = Country.objects.get(location_name=loc_name)
 
-        context.update({"location name": location_info.location_name })
+    #If it doesn't, deal with the errors
+    except ObjectDoesNotExist:
+        context.update({"error": "404", 
+                        "countries": countries,
+                        "location_name": loc_name})
+        return HttpResponse(template.render(context, request))
 
-        query = {
-                "resource": location_info.resource_url,
-                "section":  1,
-                "format":   "json",
-            }
 
-        url = location_info.api_endpoint
+    context.update({ "location_name": location_info.location_name })
 
-    else:
-        loc_name = "Hong Kong"
-        query = {
-                "resource": "http://www.chp.gov.hk/files/misc/latest_situation_of_reported_cases_covid_19_eng.csv",
-                "section":  1,
-                "format":   "json",
+    query = {
+            "resource": location_info.resource_url,
+            "section":  1,
+            "format":   "json",
         }
-        url = "https://api.data.gov.hk/v2/filter"
 
+    url = location_info.api_endpoint
 
     response = requests.get(url, params={"q": json.dumps(query)} )
 
@@ -64,7 +57,8 @@ def homepage(request):
     # retrieval of information so we must tell the user. 
     if response.status_code != 200:
         
-        context.update({ "error": response.status_code })
+        context.update({"error": response.status_code,
+                        "location_name": location_info.location_name,})
 
         HttpResponse(template.render(context, request))
 
@@ -80,26 +74,21 @@ def homepage(request):
         average_fatalities += deaths       
 
 
-    context.update({ "derived": {
+    context.update({
+                    "location_name": location_info.location_name,
+                    "countries": countries,
+                    "derived": {
                         "cases": cases,
                         "average_cases": average_cases/7,
                         "deaths": deaths,
                         "average_fatalities": average_fatalities/7,
-                        }
+                        },
+                    "raw":{
+                        "date": response[-1].get("As of date"),
+                        "total_cases": response[-1].get("Number of confirmed cases"),
+                        "total_deaths": response[-1].get("Number of death cases"),
+                        },
                     })
-
-    context.update({ "raw":{
-                            "date": response[-1].get("As of date"),
-                            "total_cases": response[-1].get("Number of confirmed cases"),
-                            "total_deaths": response[-1].get("Number of death cases"),
-                        }
-                    })
-
-    print(context["derived"])
-
-    form = homePageForm()
-
-    context.update({"form": form})
     
     print(context)
 
@@ -140,14 +129,19 @@ def newResource(request):
                 context = {"error": "503"}
                 return HttpResponse(template.render(context, request))
             
-            # If all checks pass, redirect to home
-            return HttpResponseRedirect('/')
+            # If all checks pass, redirect to the country
+            return HttpResponseRedirect('/country/'+loc)
 
         # Else return a 400 (invalid request) to user
         else:
             context = {"error": "400"}
             return HttpResponse(template.render(context, request))
 
-    # Otherwise simply return the empty tempalte so users can imput data    
+    # Otherwise simply return the empty tempalte so users can imput data  
+    model = Country
+    form = newResourceForm()
+    context.update({ "form": form }) 
+
+    print("Returning form")
     return HttpResponse(template.render(context, request))
 

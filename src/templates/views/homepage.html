@@ -15,16 +15,20 @@
 {% block content %}
 <br>
 <br>
-<h1>Test</h1>
+<h1>{{ location_name }}</h1>
 
 {% csrf_token %}
-<h2>
-    {{ form.location_list }} 
-</h2>
 
-
-
-
+<div class="dropdown">
+    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        {{ location_name }}
+    </button>
+    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        {% for country in countries %}
+        <a class="dropdown-item" href="country/{{ country }}">{{ country }}</a>
+        {% endfor %}
+    </div>
+  </div>
 
 {% if error %}
 <br>
