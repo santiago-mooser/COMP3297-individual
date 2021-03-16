@@ -25,7 +25,10 @@
     </button>
     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
         {% for country in countries %}
-        <a class="dropdown-item" href="/country/{{ country }}">{{ country }}</a>
+            {% if country == location_name %}
+            {% else %}
+            <a class="dropdown-item" href="/country/{{ country }}">{{ country }}</a>
+            {% endif %}
         {% endfor %}
     </div>
   </div>
