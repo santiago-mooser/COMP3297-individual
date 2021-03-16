@@ -1,4 +1,6 @@
 django
 django-heroku
+django-bootstrap4
 gunicorn
 whitenoise
+django-crispy-forms

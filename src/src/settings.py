@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 import os
 from pathlib import Path
 
-import django_heroku
+#import django_heroku
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,6 +34,8 @@ ALLOWED_HOSTS = [".herokuapp.com","localhost"]
 # Application definition
 
 INSTALLED_APPS = [
+    'bootstrap4',
+    'crispy_forms',
     'covid_interface.apps.CovidInterfaceConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -126,6 +128,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 # Activate Django-Heroku.
 django_heroku.settings(locals())
