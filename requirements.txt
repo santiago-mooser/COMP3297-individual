@@ -1,4 +1,5 @@
 django
+requests
 django-heroku
 django-bootstrap4
 gunicorn
