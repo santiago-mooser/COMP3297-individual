@@ -1,7 +1,7 @@
 import json
 
 import requests
-from django.core.exceptions import FieldError, ObjectDoesNotExist
+from django.core.exceptions import FieldError
 from django.http.response import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.template import loader
@@ -15,6 +15,14 @@ from .models import *
 def proxy(request):
     return redirect('homepage', loc_name='Hong Kong')
 
+def delete(request, loc_name):
+    context={}
+    try:
+        loc = Country.objects.get(location_name=loc_name)
+        loc.delete()
+    except:
+        return redirect('proxy')
+    return redirect('proxy')
 
 #This is the main homepage that actually presents all the data
 # It expects the request together with a location name in the 
@@ -26,16 +34,21 @@ def homepage(request, loc_name):
     context = {}
 
     #Get a list of all available countries
-    countries = []
-    for country in Country.objects.values():
-        countries.append(country.get("location_name"))
+    try:
+        countries = []
+        for country in Country.objects.values():
+            countries.append(country.get("location_name"))
+    except:
+        context.update({"error": "404",
+                        "location_name": loc_name})
+        return HttpResponse(template.render(context, request))
 
     #retrieve location information if it exists
     try:
         location_info = Country.objects.get(location_name=loc_name)
 
     #If it doesn't, deal with the errors
-    except ObjectDoesNotExist:
+    except:
         context.update({"error": "404", 
                         "countries": countries,
                         "location_name": loc_name})
@@ -59,6 +72,7 @@ def homepage(request, loc_name):
     if response.status_code != 200:
         
         context.update({"error": response.status_code,
+                        "countries": countries,
                         "location_name": location_info.location_name,})
 
         HttpResponse(template.render(context, request))

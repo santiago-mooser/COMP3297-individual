@@ -6,5 +6,6 @@ urlpatterns = [
     path('', views.proxy, name='proxy'),
     path('country/', views.proxy, name='proxy'),
     path('country/<str:loc_name>', views.homepage, name='homepage'),
+    path('delete/<str:loc_name>', views.delete, name='delete'),
     path('add/', views.newResource, name='new_resource'),
 ]
