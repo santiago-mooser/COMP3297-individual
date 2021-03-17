@@ -6,10 +6,10 @@ from .models import *
 
 
 class newResourceForm(forms.Form):
-    location_name   = forms.CharField(max_length=150)
-    est_population  = forms.IntegerField()
-    api_endpoint    = forms.URLField()
-    resource_url    = forms.URLField()
+    location_name   = forms.CharField(max_length=150, label='Location name')
+    est_population  = forms.IntegerField(label='Estimated Population')
+    api_endpoint    = forms.URLField(label='API Endpoint')
+    resource_url    = forms.URLField(label='Resource URL')
 
     class Meta:
         model = Country
