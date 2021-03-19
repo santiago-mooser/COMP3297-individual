@@ -1,11 +1,11 @@
 import json
 
 import requests
-from django.core.exceptions import FieldError
+from django.core.exceptions import FieldError, ObjectDoesNotExist
 from django.http.response import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.template import loader
-
+from django.utils import timezone
 from .forms import *
 from .models import *
 
@@ -32,22 +32,28 @@ def homepage(request, loc_name):
     # Load the HTML template and instantiate context
     template = loader.get_template('views/homepage.html')
     context = {}
-
+    
     #Get a list of all available countries
     try:
         countries = []
         for country in Country.objects.values():
             countries.append(country.get("location_name"))
+
+    # If no countries exist in the DB, give a 404 error
     except:
         context.update({"error": "404",
                         "location_name": loc_name})
         return HttpResponse(template.render(context, request))
 
+    context.update({
+        "countries": countries
+    })
+
     #retrieve location information if it exists
     try:
         location_info = Country.objects.get(location_name=loc_name)
 
-    #If it doesn't, deal with the errors
+    #If it doesn't exist, deal with the errors
     except:
         context.update({"error": "404", 
                         "countries": countries,
@@ -57,27 +63,74 @@ def homepage(request, loc_name):
 
     context.update({ "location_name": location_info.location_name })
 
+    # retrieve dataset associated with the location
+    try:
+        data_set = location_info.data
+    except:
+        update_data(location_info)
+        data_set = location_info.data
+
+    # Update the data if it hasn't been updated in the last 24 hours
+    if not data_set.was_updated_recently:
+        update_data(location_info)
+
+    # If the data was successfully retrieved, then display the data
+    if data_set.response_code == 200:
+        context.update({
+            "raw": data_set.raw_data,
+            "derived": data_set.derived_data,
+        })
+    else:
+        context.update({
+            "error": data_set.response_code,
+        })
+
+    # Otherwise, we can return the homepage HTML template with the retrieved data.
+    return HttpResponse(template.render(context, request))
+
+
+def update_data(country_model):
+
+    
+    # Retrieve data_set from the given country
+    # If it doesn't exist, create a new one 
+    try:
+       data_set = country_model.data
+    
+    except ObjectDoesNotExist:
+        data_set = Data(
+            key = country_model,
+            response_code=0,    
+            raw_data={}, 
+            derived_data={},
+            update_date=timezone.now()
+        )
+
+    # Format the query
     query = {
-            "resource": location_info.resource_url,
-            "section":  1,
-            "format":   "json",
-        }
+        "resource": country_model.resource_url,
+        "section":  1,
+        "format":   "json",
+    }
 
-    url = location_info.api_endpoint
-
-    response = requests.get(url, params={"q": json.dumps(query)} )
+    # Run the query
+    r =  requests.get(
+                    country_model.api_endpoint,
+                    params={
+                        "q": json.dumps(query),
+                    }
+                )
 
     # If the status code isn't 200 (meaning success), then there was an error in the 
     # retrieval of information so we must tell the user. 
-    if response.status_code != 200:
+    if r.status_code != 200:
         
-        context.update({"error": response.status_code,
-                        "countries": countries,
-                        "location_name": location_info.location_name,})
+        data_set.response_code = r.status_code
+        data_set.save()  
+        return 
 
-        HttpResponse(template.render(context, request))
-
-    response = response.json()
+    # Calculate all the needed data
+    response = r.json()
     average_cases = 0
     average_fatalities = 0
     cases = 0
@@ -88,39 +141,57 @@ def homepage(request, loc_name):
         average_cases += cases   
         average_fatalities += deaths       
 
+    # Create the needed JSON objects
+    raw = { 
+        "date":{
+            "label": "Date", 
+            "data":response[-1].get("As of date")},
+        "total_cases": {
+            "label": "Total Cases", 
+            "data":response[-1].get("Number of confirmed cases")
+        },
+        "total_deaths":{
+            "label": "Total Deaths", 
+            "data":response[-1].get("Number of death cases")
+        },
+    }
 
-    context.update({
-                    "location_name": location_info.location_name,
-                    "countries": countries,
-                    "derived": {
-                        "new_cases": {  "label": "New Cases today", 
-                                        "data": cases},
-                        "average_cases": {  "label": "7-Day rolling average of cases", 
-                                            "data": average_cases/7},
-                        "cases_per_mil": {  "label": "Cases per million people", 
-                                            "data": response[-1].get("Number of confirmed cases")/(location_info.est_population/1000000)},
-                        "new_deaths": { "label": "New deaths today", 
-                                        "data":deaths},
-                        "average_fatalities": { "label": "7-Day rolling average of deaths", 
-                                                "data":average_fatalities/7},
-                        "deaths_per_mil": { "label": "Deaths per million people", 
-                                            "data": response[-1].get("Number of death cases")/(location_info.est_population/1000000)},
-                        },
-                    "raw":{
-                        "date": {   "label": "Date", 
-                                    "data":response[-1].get("As of date")},
-                        "total_cases": {"label": "Total Cases", 
-                                        "data":response[-1].get("Number of confirmed cases")},
-                        "total_deaths": {   "label": "Total Deaths", 
-                                            "data":response[-1].get("Number of death cases")},
-                        },
-                    })
+    derived = { 
+        "new_cases": {  
+            "label": "New Cases today", 
+            "data": cases
+        },
+        "average_cases": { 
+            "label": "7-Day rolling average of cases", 
+            "data": average_cases/7
+        },
+        "cases_per_mil": {  
+            "label": "Cases per million people", 
+            "data": response[-1].get("Number of confirmed cases")/(country_model.est_population/1000000)
+        },
+        "new_deaths": {
+            "label": "New deaths today", 
+            "data":deaths
+        },
+        "average_fatalities": { 
+            "label": "7-Day rolling average of deaths", 
+            "data":average_fatalities/7
+        },
+        "deaths_per_mil": {
+            "label": "Deaths per million people", 
+            "data": response[-1].get("Number of death cases")/(country_model.est_population/1000000)
+        },
+    }
+
+    # Save updates in dataset 
+    data_set.response_code=r.status_code
+    data_set.raw_data=raw
+    data_set.derived_data=derived
+    data_set.update_date=timezone.now()
+
+    data_set.save()
     
-    print(context)
-
-    # Otherwise, we can return the homepage HTML template with the retrieved data.
-    return HttpResponse(template.render(context, request))
-
+    return
 
 
 # In this page, the user is saving data
@@ -154,6 +225,9 @@ def newResource(request):
             except FieldError:
                 context = {"error": "503"}
                 return HttpResponse(template.render(context, request))
+
+            # Update the data
+            update_data(model)
             
             # If all checks pass, redirect to the country
             return HttpResponseRedirect('/country/'+loc)
