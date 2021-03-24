@@ -70,7 +70,7 @@ def homepage(request, loc_name):
         update_data(location_info)
         data_set = location_info.data
 
-    # Update the data if it hasn't been updated in the last 24 hours
+    # Update the data if it hasn't been updated in the last 12 hours
     if not data_set.was_updated_recently:
         update_data(location_info)
 
@@ -87,7 +87,6 @@ def homepage(request, loc_name):
 
     # Otherwise, we can return the homepage HTML template with the retrieved data.
     return HttpResponse(template.render(context, request))
-
 
 def update_data(country_model):
 
@@ -159,27 +158,27 @@ def update_data(country_model):
     derived = { 
         "new_cases": {  
             "label": "New Cases today", 
-            "data": cases
+            "data": cases,
         },
         "average_cases": { 
             "label": "7-Day rolling average of cases", 
-            "data": average_cases/7
+            "data": int(average_cases/7),
         },
         "cases_per_mil": {  
             "label": "Cases per million people", 
-            "data": response[-1].get("Number of confirmed cases")/(country_model.est_population/1000000)
+            "data": int(response[-1].get("Number of confirmed cases")/(country_model.est_population/1000000)),
         },
         "new_deaths": {
             "label": "New deaths today", 
-            "data":deaths
+            "data": deaths,
         },
         "average_fatalities": { 
             "label": "7-Day rolling average of deaths", 
-            "data":average_fatalities/7
+            "data": int(average_fatalities/7),
         },
         "deaths_per_mil": {
             "label": "Deaths per million people", 
-            "data": response[-1].get("Number of death cases")/(country_model.est_population/1000000)
+            "data": int(response[-1].get("Number of death cases")/(country_model.est_population/1000000)),
         },
     }
 
