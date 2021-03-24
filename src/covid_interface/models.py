@@ -25,4 +25,4 @@ class Data(models.Model):
     update_date     =   models.DateTimeField('date updated')
 
     def was_updated_recently(self):
-        return self.update_date >= timezone.now() - datetime.timedelta(days=1)
+        return self.update_date >= timezone.now() - datetime.timedelta(hours=12)
