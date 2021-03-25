@@ -6,6 +6,8 @@ from django.http.response import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.template import loader
 from django.utils import timezone
+from django.contrib import messages
+from requests.models import Request
 from .forms import *
 from .models import *
 
@@ -36,10 +38,7 @@ def update(request, loc_name):
     except:
         return redirect('proxy')
 
-    try:
-        update_data(location_info)
-    except:
-        print("Update failed!")
+    update_data(location_info, request)
 
     return redirect('homepage', loc_name=loc_name)
 
@@ -86,19 +85,14 @@ def homepage(request, loc_name):
     # retrieve dataset associated with the location
     try:
         data_set = location_info.data
+
     except:
-        try:
-            update_data(location_info)
-        except:
-            print("Update failed")
+        update_data(location_info, request)
         data_set = location_info.data
 
     # Update the data if it hasn't been updated in the last 24 hours
     if not data_set.data_is_updated:
-        try:
-            update_data(location_info)
-        except:
-            print("Failed update!")
+        update_data(location_info, request)
 
     # If the data was successfully retrieved, then display the data
     if data_set.response_code == 200:
@@ -111,12 +105,14 @@ def homepage(request, loc_name):
             "error": data_set.response_code,
         })
 
+    print(context)
+
     # Otherwise, we can return the homepage HTML template with the retrieved data.
     return HttpResponse(template.render(context, request))
 
 
 
-def update_data(country_model):
+def update_data(country_model, request):
 
     # Retrieve data_set from the given country
     # If it doesn't exist, create a new one 
@@ -148,7 +144,7 @@ def update_data(country_model):
                     }
         )
     except:
-        print("Update failed!")
+        messages.error(request, "API query failed!")
         return
 
     # If the status code isn't 200 (meaning success), then there was an error in the 
@@ -175,7 +171,7 @@ def update_data(country_model):
         # Create the needed JSON objects
         raw = { 
             "date":{
-                "label": "Date", 
+                "label": "Data last updated", 
                 "data":response[-1].get("As of date")},
             "total_cases": {
                 "label": "Total Cases", 
@@ -189,7 +185,7 @@ def update_data(country_model):
 
         derived = { 
             "new_cases": {  
-                "label": "New Cases today", 
+                "label": "Cases as of last update", 
                 "data": cases,
             },
             "average_cases": { 
@@ -201,7 +197,7 @@ def update_data(country_model):
                 "data": int(response[-1].get("Number of confirmed cases")/(country_model.est_population/1000000)),
             },
             "new_deaths": {
-                "label": "New deaths today", 
+                "label": "Deaths as of last update", 
                 "data": deaths,
             },
             "average_fatalities": { 
@@ -224,10 +220,10 @@ def update_data(country_model):
         print("Updated!")
 
     except:
-        print("Update failed.")
-    
-    print("Updated!")
+        messages.error(request, 'Update failed!')
+        return
 
+    messages.success(request, "Data successfully updated!")
     return
 
 
@@ -263,12 +259,6 @@ def newResource(request):
             except FieldError:
                 context = {"error": "503"}
                 return HttpResponse(template.render(context, request))
-
-            # Update the data
-            try:
-                update_data(model)
-            except:
-                print("Update failed")
 
             # If all checks pass, redirect to the country
             return HttpResponseRedirect('/country/'+loc)
