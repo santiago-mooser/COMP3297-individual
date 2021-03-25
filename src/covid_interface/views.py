@@ -36,7 +36,13 @@ def update(request, loc_name):
     except:
         return redirect('proxy')
 
-    update_data(location_info)
+    try:
+        update_data(location_info)
+    except:
+        print("Update failed!")
+
+    location_info.data.response_code = 502
+    location_info.data.save()
 
     return redirect('proxy')
 
@@ -84,12 +90,18 @@ def homepage(request, loc_name):
     try:
         data_set = location_info.data
     except:
-        update_data(location_info)
+        try:
+            update_data(location_info)
+        except:
+            print("Update failed")
         data_set = location_info.data
 
     # Update the data if it hasn't been updated in the last 24 hours
     if not data_set.data_is_updated:
-        update_data(location_info)
+        try:
+            update_data(location_info)
+        except:
+            print("Failed update!")
 
     # If the data was successfully retrieved, then display the data
     if data_set.response_code == 200:
@@ -109,7 +121,6 @@ def homepage(request, loc_name):
 
 def update_data(country_model):
     
-    print("Updated!")
     # Retrieve data_set from the given country
     # If it doesn't exist, create a new one 
     try:
@@ -209,6 +220,8 @@ def update_data(country_model):
 
     data_set.save()
     
+    print("Updated!")
+
     return
 
 
@@ -246,8 +259,11 @@ def newResource(request):
                 return HttpResponse(template.render(context, request))
 
             # Update the data
-            update_data(model)
-            
+            try:
+                update_data(model)
+            except:
+                print("Update failed")
+
             # If all checks pass, redirect to the country
             return HttpResponseRedirect('/country/'+loc)
 
