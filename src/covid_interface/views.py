@@ -41,10 +41,7 @@ def update(request, loc_name):
     except:
         print("Update failed!")
 
-    location_info.data.response_code = 502
-    location_info.data.save()
-
-    return redirect('proxy')
+    return redirect('homepage', loc_name=loc_name)
 
 
 
@@ -120,7 +117,7 @@ def homepage(request, loc_name):
 
 
 def update_data(country_model):
-    
+
     # Retrieve data_set from the given country
     # If it doesn't exist, create a new one 
     try:
@@ -143,12 +140,16 @@ def update_data(country_model):
     }
 
     # Run the query
-    r =  requests.get(
+    try:
+        r =  requests.get(
                     country_model.api_endpoint,
                     params={
                         "q": json.dumps(query),
                     }
-                )
+        )
+    except:
+        print("Update failed!")
+        return
 
     # If the status code isn't 200 (meaning success), then there was an error in the 
     # retrieval of information so we must tell the user. 
@@ -158,67 +159,72 @@ def update_data(country_model):
         data_set.save()  
         return 
 
-    # Calculate all the needed data
-    response = r.json()
-    average_cases = 0
-    average_fatalities = 0
-    cases = 0
-    deaths = 0
-    for i in range(7):
-        cases = int(response[-i-1].get("Number of confirmed cases")) - int(response[-i-2].get("Number of confirmed cases"))
-        deaths = int(response[-i-1].get("Number of death cases")) - int(response[-i-2].get("Number of death cases"))
-        average_cases += cases   
-        average_fatalities += deaths       
+    try:
+        # Calculate all the needed data
+        response = r.json()
+        average_cases = 0
+        average_fatalities = 0
+        cases = 0
+        deaths = 0
+        for i in range(7):
+            cases = int(response[-i-1].get("Number of confirmed cases")) - int(response[-i-2].get("Number of confirmed cases"))
+            deaths = int(response[-i-1].get("Number of death cases")) - int(response[-i-2].get("Number of death cases"))
+            average_cases += cases   
+            average_fatalities += deaths       
 
-    # Create the needed JSON objects
-    raw = { 
-        "date":{
-            "label": "Date", 
-            "data":response[-1].get("As of date")},
-        "total_cases": {
-            "label": "Total Cases", 
-            "data":response[-1].get("Number of confirmed cases")
-        },
-        "total_deaths":{
-            "label": "Total Deaths", 
-            "data":response[-1].get("Number of death cases")
-        },
-    }
+        # Create the needed JSON objects
+        raw = { 
+            "date":{
+                "label": "Date", 
+                "data":response[-1].get("As of date")},
+            "total_cases": {
+                "label": "Total Cases", 
+                "data":response[-1].get("Number of confirmed cases")
+            },
+            "total_deaths":{
+                "label": "Total Deaths", 
+                "data":response[-1].get("Number of death cases")
+            },
+        }
 
-    derived = { 
-        "new_cases": {  
-            "label": "New Cases today", 
-            "data": cases,
-        },
-        "average_cases": { 
-            "label": "7-Day rolling average of cases", 
-            "data": int(average_cases/7),
-        },
-        "cases_per_mil": {  
-            "label": "Cases per million people", 
-            "data": int(response[-1].get("Number of confirmed cases")/(country_model.est_population/1000000)),
-        },
-        "new_deaths": {
-            "label": "New deaths today", 
-            "data": deaths,
-        },
-        "average_fatalities": { 
-            "label": "7-Day rolling average of deaths", 
-            "data": int(average_fatalities/7),
-        },
-        "deaths_per_mil": {
-            "label": "Deaths per million people", 
-            "data": int(response[-1].get("Number of death cases")/(country_model.est_population/1000000)),
-        },
-    }
+        derived = { 
+            "new_cases": {  
+                "label": "New Cases today", 
+                "data": cases,
+            },
+            "average_cases": { 
+                "label": "7-Day rolling average of cases", 
+                "data": int(average_cases/7),
+            },
+            "cases_per_mil": {  
+                "label": "Cases per million people", 
+                "data": int(response[-1].get("Number of confirmed cases")/(country_model.est_population/1000000)),
+            },
+            "new_deaths": {
+                "label": "New deaths today", 
+                "data": deaths,
+            },
+            "average_fatalities": { 
+                "label": "7-Day rolling average of deaths", 
+                "data": int(average_fatalities/7),
+            },
+            "deaths_per_mil": {
+                "label": "Deaths per million people", 
+                "data": int(response[-1].get("Number of death cases")/(country_model.est_population/1000000)),
+            },
+        }
 
-    # Save updates in dataset 
-    data_set.response_code=r.status_code
-    data_set.raw_data=raw
-    data_set.derived_data=derived
-    data_set.update_date=timezone.now()
+        # Save updates in dataset 
+        data_set.response_code=r.status_code
+        data_set.raw_data=raw
+        data_set.derived_data=derived
+        data_set.update_date=timezone.now()
 
-    data_set.save()
+        data_set.save()
+        print("Updated!")
+
+    except:
+        print("Update failed.")
     
     print("Updated!")
 
