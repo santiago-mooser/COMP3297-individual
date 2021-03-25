@@ -7,7 +7,6 @@ from django.shortcuts import redirect
 from django.template import loader
 from django.utils import timezone
 from django.contrib import messages
-from requests.models import Request
 from .forms import *
 from .models import *
 
@@ -20,6 +19,10 @@ def proxy(request):
 
 
 
+# This view allows the user to delete a view. It is hidden
+# on purpose because it is not in the specs and although 
+# I would usually never add out-of-spec, hidden features, 
+# it is a pain in the ass to erase data in heroku's postgres
 def delete(request, loc_name):
     try:
         loc = Country.objects.get(location_name=loc_name)
@@ -30,11 +33,22 @@ def delete(request, loc_name):
 
 
 
+# Small easteregg for prof
+def teapot(request):
+    messages.info(request, "I'm a teapot!")
+
+    return redirect('proxy')
+
+
+
+# This simple view allows the user to manually update the page
 def update(request, loc_name):
+
+    #Try retrieving the object containing that country's information
     try:
         location_info = Country.objects.get(location_name=loc_name)
 
-    #If it doesn't exist, deal with the errors
+    #If it doesn't exist, redirect to default page
     except:
         return redirect('proxy')
 
@@ -44,25 +58,24 @@ def update(request, loc_name):
 
 
 
-#This is the main homepage that actually presents all the data
-# It expects the request together with a location name in the 
-# form of a string.
+#This is the main homepage that actually presents all the data.
+# It expects a location name in the form of a string.
 def homepage(request, loc_name):
 
-    # Load the HTML template and instantiate context
+    # Load the HTML template and instantiate the context
     template = loader.get_template('views/homepage.html')
     context = {}
     
-    #Get a list of all available countries
+    #Get a list of all available countries (if any)
     try:
         countries = []
         for country in Country.objects.values():
             countries.append(country.get("location_name"))
 
-    # If no countries exist in the DB, give a 404 error
+    # If no countries exist in the DB, show "I f'd up" error
     except:
-        context.update({"error": "404",
-                        "location_name": loc_name})
+        context.update({"location_name": loc_name})
+        messages.warning(request, "No locations saved!")
         return HttpResponse(template.render(context, request))
 
     context.update({
@@ -73,19 +86,22 @@ def homepage(request, loc_name):
     try:
         location_info = Country.objects.get(location_name=loc_name)
 
-    #If it doesn't exist, deal with the errors
+    #If it doesn't exist, show a "you f'd up" error
     except:
-        context.update({"error": "404", 
-                        "countries": countries,
+        context.update({"countries": countries,
                         "location_name": loc_name})
+        messages.warning(request, "Location not found")
         return HttpResponse(template.render(context, request))
 
+    # Add the location name to the context from request
     context.update({ "location_name": location_info.location_name })
 
     # retrieve dataset associated with the location
     try:
         data_set = location_info.data
-
+    except ObjectDoesNotExist:
+        messages.error(request, "Unable to retrieve details")
+        return HttpResponse(template.render(context, request))
     except:
         update_data(location_info, request)
         data_set = location_info.data
@@ -93,29 +109,27 @@ def homepage(request, loc_name):
     # Update the data if it hasn't been updated in the last 24 hours
     if not data_set.data_is_updated:
         update_data(location_info, request)
+        messages.info(request, "Data updated")
 
-    # If the data was successfully retrieved, then display the data
+    # If the data was successfully retrieved, then add the data to 
+    # the context
     if data_set.response_code == 200:
         context.update({
             "raw": data_set.raw_data,
             "derived": data_set.derived_data,
         })
-    else:
-        context.update({
-            "error": data_set.response_code,
-        })
 
-    print(context)
-
-    # Otherwise, we can return the homepage HTML template with the retrieved data.
     return HttpResponse(template.render(context, request))
 
 
 
+# This view retrieves, processes and stores the API data in
+# the database. It is *not* called through URLs, but from 
+# the other views.
+# This is why the request is here ↓
 def update_data(country_model, request):
 
     # Retrieve data_set from the given country
-    # If it doesn't exist, create a new one 
     try:
        data_set = country_model.data
     
@@ -128,7 +142,7 @@ def update_data(country_model, request):
             update_date=timezone.now()
         )
 
-    # Format the query
+    # Create the query from the saved information
     query = {
         "resource": country_model.resource_url,
         "section":  1,
@@ -143,18 +157,22 @@ def update_data(country_model, request):
                         "q": json.dumps(query),
                     }
         )
+
+    # If the query didn't succeed, return with an error 
     except:
-        messages.error(request, "API query failed!")
+        messages.error(request, "504: API query failed!")
         return
 
-    # If the status code isn't 200 (meaning success), then there was an error in the 
-    # retrieval of information so we must tell the user. 
+    # If the status code isn't 200, return with errors.
     if r.status_code != 200:
         
         data_set.response_code = r.status_code
-        data_set.save()  
+        data_set.save()
+        messages.error(request, "non-200 response from API!")
         return 
 
+    # Otherwise instatiate and populate the necessary variables 
+    # to save the raw and derived data
     try:
         # Calculate all the needed data
         response = r.json()
@@ -211,16 +229,22 @@ def update_data(country_model, request):
         }
 
         # Save updates in dataset 
-        data_set.response_code=r.status_code
-        data_set.raw_data=raw
-        data_set.derived_data=derived
-        data_set.update_date=timezone.now()
+        try:
+            data_set.response_code=r.status_code
+            data_set.raw_data=raw
+            data_set.derived_data=derived
+            data_set.update_date=timezone.now()
 
-        data_set.save()
-        print("Updated!")
+            data_set.save()
 
+        #If this fails the database is not accessible 
+        except:
+            messages(request, "500: Unable to store data in database!")
+
+    # If the derived data can't be computed, the API must have sent bad
+    # data. 
     except:
-        messages.error(request, 'Update failed!')
+        messages.error(request, '500: Data sent by API is not parseable!')
         return
 
     messages.success(request, "Data successfully updated!")
@@ -228,7 +252,8 @@ def update_data(country_model, request):
 
 
 
-# In this page, the user is saving data
+# This view is for saving data. This is the only view where new 
+# database objects can be created. 
 def newResource(request):
 
     # First, like always, load the HTML template with no context
@@ -239,6 +264,7 @@ def newResource(request):
     if request.method == "POST":
         form = newResourceForm(request.POST)
 
+        #Check whether the form is valid
         if form.is_valid():
 
             # Extract data from form
@@ -253,19 +279,22 @@ def newResource(request):
                             api_endpoint=api,
                             resource_url=url)
 
-            # Save the model to the DB. Return error if unable to do so
+            # Save the model to the DB
             try:
                 model.save()
-            except FieldError:
-                context = {"error": "503"}
+            
+            # If that doesn't work, we probably have bigger problems
+            except:
+                messages.error(request, "500: Internal server error!")
                 return HttpResponse(template.render(context, request))
 
-            # If all checks pass, redirect to the country
+            # If all checks pass, return success & redirect to the country
+            messages.success(request, "201: Details successfully saved")
             return HttpResponseRedirect('/country/'+loc)
 
         # Else return a 400 (invalid request) to user
         else:
-            context = {"error": "400"}
+            messages.error(request, "400: Invalid details!")
             return HttpResponse(template.render(context, request))
 
     # Otherwise simply return the empty tempalte so users can imput data  
