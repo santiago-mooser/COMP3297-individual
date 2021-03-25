@@ -10,19 +10,37 @@ from .forms import *
 from .models import *
 
 
+
 # This is so that if the website is visited without any options, 
 # the Hong Kong view will still be displayed.
 def proxy(request):
     return redirect('homepage', loc_name='Hong Kong')
 
+
+
 def delete(request, loc_name):
-    context={}
     try:
         loc = Country.objects.get(location_name=loc_name)
         loc.delete()
     except:
         return redirect('proxy')
     return redirect('proxy')
+
+
+
+def update(request, loc_name):
+    try:
+        location_info = Country.objects.get(location_name=loc_name)
+
+    #If it doesn't exist, deal with the errors
+    except:
+        return redirect('proxy')
+
+    update_data(location_info)
+
+    return redirect('proxy')
+
+
 
 #This is the main homepage that actually presents all the data
 # It expects the request together with a location name in the 
@@ -60,7 +78,6 @@ def homepage(request, loc_name):
                         "location_name": loc_name})
         return HttpResponse(template.render(context, request))
 
-
     context.update({ "location_name": location_info.location_name })
 
     # retrieve dataset associated with the location
@@ -70,8 +87,8 @@ def homepage(request, loc_name):
         update_data(location_info)
         data_set = location_info.data
 
-    # Update the data if it hasn't been updated in the last 12 hours
-    if data_set.was_updated_recently:
+    # Update the data if it hasn't been updated in the last 24 hours
+    if not data_set.data_is_updated:
         update_data(location_info)
 
     # If the data was successfully retrieved, then display the data
@@ -88,9 +105,11 @@ def homepage(request, loc_name):
     # Otherwise, we can return the homepage HTML template with the retrieved data.
     return HttpResponse(template.render(context, request))
 
-def update_data(country_model):
 
+
+def update_data(country_model):
     
+    print("Updated!")
     # Retrieve data_set from the given country
     # If it doesn't exist, create a new one 
     try:
@@ -191,6 +210,7 @@ def update_data(country_model):
     data_set.save()
     
     return
+
 
 
 # In this page, the user is saving data

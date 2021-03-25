@@ -24,5 +24,5 @@ class Data(models.Model):
     raw_data        =   models.JSONField()
     update_date     =   models.DateTimeField('date updated')
 
-    def was_updated_recently(self):
-        return self.update_date >= timezone.now() - datetime.timedelta(hours=12)
+    def data_is_updated(self):
+        return self.update_date >= timezone.now() - datetime.timedelta(hours=24)
