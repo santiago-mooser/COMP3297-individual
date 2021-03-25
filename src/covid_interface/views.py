@@ -71,7 +71,7 @@ def homepage(request, loc_name):
         data_set = location_info.data
 
     # Update the data if it hasn't been updated in the last 12 hours
-    if not data_set.was_updated_recently:
+    if data_set.was_updated_recently:
         update_data(location_info)
 
     # If the data was successfully retrieved, then display the data
