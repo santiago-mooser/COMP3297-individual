@@ -260,6 +260,9 @@ def newResource(request):
     template = loader.get_template('views/new_resource.html')
     context = {}
 
+    form = newResourceForm()
+    context.update({ "form": form })
+
     #If the request is POST, process the form (since the user is submitting data)
     if request.method == "POST":
         form = newResourceForm(request.POST)
@@ -294,12 +297,8 @@ def newResource(request):
 
         # Else return a 400 (invalid request) to user
         else:
-            messages.error(request, "400: Invalid details!")
+            messages.error(request, "Invalid details!")
             return HttpResponse(template.render(context, request))
-
-    # Otherwise simply return the empty tempalte so users can imput data  
-    model = Country
-    form = newResourceForm()
-    context.update({ "form": form }) 
+ 
     return HttpResponse(template.render(context, request))
 
