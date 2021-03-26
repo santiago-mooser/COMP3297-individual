@@ -29,6 +29,8 @@ def delete(request, loc_name):
         loc.delete()
     except:
         return redirect('proxy')
+
+    messages.info(request, f'{loc_name} deleted from database.')
     return redirect('proxy')
 
 
@@ -90,7 +92,7 @@ def homepage(request, loc_name):
     except:
         context.update({"countries": countries,
                         "location_name": loc_name})
-        messages.warning(request, "Location not found")
+        messages.warning(request, "Location not found! Please access valid location.")
         return HttpResponse(template.render(context, request))
 
     # Add the location name to the context from request
@@ -100,7 +102,7 @@ def homepage(request, loc_name):
     try:
         data_set = location_info.data
     except ObjectDoesNotExist:
-        messages.error(request, "Unable to retrieve details")
+        messages.error(request, "Unable to retrieve details.")
         return HttpResponse(template.render(context, request))
     except:
         update_data(location_info, request)
@@ -109,7 +111,7 @@ def homepage(request, loc_name):
     # Update the data if it hasn't been updated in the last 24 hours
     if not data_set.data_is_updated:
         update_data(location_info, request)
-        messages.info(request, "Data updated")
+        messages.info(request, "Success! Data updated.")
 
     # If the data was successfully retrieved, then add the data to 
     # the context
@@ -160,7 +162,7 @@ def update_data(country_model, request):
 
     # If the query didn't succeed, return with an error 
     except:
-        messages.error(request, "504: API query failed!")
+        messages.error(request, "Data retrieval failed! Please check API status.")
         return
 
     # If the status code isn't 200, return with errors.
@@ -168,7 +170,7 @@ def update_data(country_model, request):
         
         data_set.response_code = r.status_code
         data_set.save()
-        messages.error(request, "non-200 response from API!")
+        messages.error(request, "Non-standard response from API! Please check API status.")
         return 
 
     # Otherwise instatiate and populate the necessary variables 
@@ -239,15 +241,15 @@ def update_data(country_model, request):
 
         #If this fails the database is not accessible 
         except:
-            messages(request, "500: Unable to store data in database!")
+            messages(request, "Unable to store data in database. Please reload page.")
 
     # If the derived data can't be computed, the API must have sent bad
     # data. 
     except:
-        messages.error(request, '500: Data sent by API is not parseable!')
+        messages.error(request, 'Data sent by API is not parseable. Please check location API.')
         return
 
-    messages.success(request, "Data successfully updated!")
+    messages.success(request, "Data successfully updated.")
     return
 
 
@@ -288,16 +290,16 @@ def newResource(request):
             
             # If that doesn't work, we probably have bigger problems
             except:
-                messages.error(request, "500: Internal server error!")
+                messages.error(request, "Internal server error! Please reload page.")
                 return HttpResponse(template.render(context, request))
 
             # If all checks pass, return success & redirect to the country
-            messages.success(request, "201: Details successfully saved")
+            messages.success(request, "Details successfully saved.")
             return HttpResponseRedirect('/country/'+loc)
 
         # Else return a 400 (invalid request) to user
         else:
-            messages.error(request, "Invalid details!")
+            messages.error(request, "Please enter valid details.")
             return HttpResponse(template.render(context, request))
  
     return HttpResponse(template.render(context, request))
