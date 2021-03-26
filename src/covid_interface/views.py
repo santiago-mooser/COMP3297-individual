@@ -35,7 +35,7 @@ def delete(request, loc_name):
 
 # Small easteregg for prof
 def teapot(request):
-    messages.info(request, "I'm a teapot!")
+    messages.info(request, "HTTP 418")
 
     return redirect('proxy')
 
