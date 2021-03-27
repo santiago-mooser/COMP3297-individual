@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}
+    Homepage
+{% endblock %}
+
+{% block navbar %}
+<li class="nav-item active">
+    <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="/add/">New Resource </a>
+</li>
+{% endblock %}
+
+{% block content %}
+<br>
+<div class="container-fluid text-center">    
+    <div class="row title">
+        <div class="col text-left"> 
+            <h2>{{ location_name }} not found!</h2>
+        </div>
+        <div class="col text-right">
+            <div class="row dropdown">
+                <div class="col text-right">
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        {{ location_name }}
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            {% for country in countries %}
+                                <a class="dropdown-item" href="/country/{{ country }}">{{ country }}</a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row options">
+        <div class="col text-left">
+            Add as new location?
+        </div>
+        <div class="col text-right">
+            <a class="btn btn-primary" href="/add/{{ location_name }}" role="button">Yes</a>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block footer %}
+{% endblock %}

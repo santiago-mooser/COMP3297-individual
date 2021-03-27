@@ -8,7 +8,8 @@ urlpatterns = [
     path('country/', views.proxy, name='proxy'),
 
     #Path to add a new resource
-    path('add/', views.newResource, name='new_resource'),
+    path('add/', views.newResource_proxy, name='new_resource_proxy'),
+    path('add/<str:loc_name>', views.newResource, name='newResource'),
 
     # Once those resources have been added, you can see,
     # delete or update them, or anjoy a nice cup of tea.

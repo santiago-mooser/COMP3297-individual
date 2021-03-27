@@ -77,6 +77,7 @@ def homepage(request, loc_name):
     # If no countries exist in the DB, show "I f'd up" error
     except:
         context.update({"location_name": loc_name})
+        template = loader.get_template('views/no_locations.html')
         messages.warning(request, "No locations saved!")
         return HttpResponse(template.render(context, request))
 
@@ -92,7 +93,8 @@ def homepage(request, loc_name):
     except:
         context.update({"countries": countries,
                         "location_name": loc_name})
-        messages.warning(request, "Location not found! Please access valid location.")
+        template = loader.get_template('views/no_locations.html')
+        messages.warning(request, "Location not found!")
         return HttpResponse(template.render(context, request))
 
     # Add the location name to the context from request
@@ -254,15 +256,21 @@ def update_data(country_model, request):
 
 
 
+def newResource_proxy(request):
+    
+    return redirect('newResource', loc_name=" ")
+
+
+
 # This view is for saving data. This is the only view where new 
 # database objects can be created. 
-def newResource(request):
+def newResource(request, loc_name):
 
     # First, like always, load the HTML template with no context
     template = loader.get_template('views/new_resource.html')
     context = {}
 
-    form = newResourceForm()
+    form = newResourceForm(initial={"location_name": loc_name})
     context.update({ "form": form })
 
     #If the request is POST, process the form (since the user is submitting data)
