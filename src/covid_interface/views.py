@@ -293,6 +293,9 @@ def newResource(request):
                 messages.error(request, "Internal server error! Please reload page.")
                 return HttpResponse(template.render(context, request))
 
+            #Update the data
+            update_data(model, request)
+
             # If all checks pass, return success & redirect to the country
             messages.success(request, "Details successfully saved.")
             return HttpResponseRedirect('/country/'+loc)
