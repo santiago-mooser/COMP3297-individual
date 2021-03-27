@@ -258,7 +258,7 @@ def update_data(country_model, request):
 
 def newResource_proxy(request):
     
-    return redirect('newResource', loc_name=" ")
+    return redirect('newResource', loc_name="new")
 
 
 
@@ -270,7 +270,10 @@ def newResource(request, loc_name):
     template = loader.get_template('views/new_resource.html')
     context = {}
 
-    form = newResourceForm(initial={"location_name": loc_name})
+    if loc_name !="new":
+        form = newResourceForm()
+    else:
+        form = newResourceForm(initial={"location_name": loc_name})
     context.update({ "form": form })
 
     #If the request is POST, process the form (since the user is submitting data)
