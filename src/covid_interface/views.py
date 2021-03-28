@@ -270,8 +270,8 @@ def newResource(request, loc_name):
     template = loader.get_template('views/new_resource.html')
     context = {}
 
-    if loc_name !="new":
-        form = newResourceForm()
+    if loc_name == "new":
+        form = newResourceForm(initial={"location_name": ""})
     else:
         form = newResourceForm(initial={"location_name": loc_name})
     context.update({ "form": form })
@@ -314,7 +314,7 @@ def newResource(request, loc_name):
         # Else return a 400 (invalid request) to user
         else:
             messages.error(request, "Please enter valid details.")
-            return HttpResponse(template.render(context, request))
+            return redirect('newResource', loc_name=loc_name)
  
     return HttpResponse(template.render(context, request))
 
