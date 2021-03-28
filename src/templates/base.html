@@ -39,13 +39,13 @@
                      
             <div class="row content">
                 <div class="col-sm-2 sidenav">
+                    <br>
+                    {% bootstrap_messages %}
                 </div>
                 <div class="col-sm-8 text-left"> 
                     {% block content %}<!-- Main Content block -->{% endblock %}
                 </div>
                 <div class="col-sm-2 sidenav">
-                    <br>
-                    {% bootstrap_messages %}
                 </div>
             </div>
         </div>
@@ -53,9 +53,11 @@
         <footer class="mt-auto bg-dark">
             <div class="container unique-color-dark">
                 <div class="footer-copyright text-center">
-                    <p class="text-white">
-                        Like the site? Here's my <a class="text-blue" href="https://github.com/santiago-espinosa" target="_blank" rel="noopener noreferrer">Github</a>
-                    </p>
+                    <div class="col text-center">
+                            <p class="text-white">
+                                Like the site? Here's my <a class="text-blue" href="https://github.com/santiago-espinosa" target="_blank" rel="noopener noreferrer">Github</a>
+                            </p>
+                    </div>
                 </div>
             </div>
         </footer>
