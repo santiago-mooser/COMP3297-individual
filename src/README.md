@@ -14,5 +14,7 @@ This project was done by [Santiago Espinosa Mooser](github.com/santiago-espinosa
 # Additional features:
 
 - Manually update data if wanted
-- Delete location data by accessing se-covid.herokuapp.com/delete/location%20name
-- Small easteregg at [/418/](se-covid.herokuapp.com/418)
+- Delete location data if wanted
+- Small easteregg by clicking on the logo
+- Prompt to add location in case visited location doesn't exist
+  - Auto-fill location name if prompt is followed
