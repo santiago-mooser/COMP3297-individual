@@ -188,7 +188,7 @@ def update_data(country_model, request):
             cases = int(response[-i-1].get("Number of confirmed cases")) - int(response[-i-2].get("Number of confirmed cases"))
             deaths = int(response[-i-1].get("Number of death cases")) - int(response[-i-2].get("Number of death cases"))
             average_cases += cases   
-            average_fatalities += deaths       
+            average_fatalities += deaths
 
         # Create the needed JSON objects
         raw = { 
@@ -208,7 +208,7 @@ def update_data(country_model, request):
         derived = { 
             "new_cases": {  
                 "label": "Cases as of last update", 
-                "data": cases,
+                "data": int(response[-1].get("Number of confirmed cases")) - int(response[-2].get("Number of confirmed cases")),
             },
             "average_cases": { 
                 "label": "7-Day rolling average of cases", 
