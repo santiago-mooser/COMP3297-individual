@@ -15,5 +15,5 @@ pytz==2021.1
 requests==2.25.1
 soupsieve==2.2
 sqlparse==0.4.1
-urllib3==1.26.5
+urllib3==1.26.18
 whitenoise==5.2.0
